@@ -74,7 +74,7 @@ class SignUpActivity : AppCompatActivity() {
                 preferenceManager?.putBoolean(KEY_IS_SIGNED_IN, true)
                 preferenceManager?.putString(KEY_USER_ID, it.id)
                 preferenceManager?.putString(KEY_NAME, binding.editTextName.text.toString())
-                preferenceManager?.putString(KEY_IMAGE, binding.imageProfile.toString())
+                preferenceManager?.putString(KEY_IMAGE, encodedImage.toString())
                 val intent = Intent(this, MainActivity::class.java)
                 intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 startActivity(intent)
@@ -114,28 +114,34 @@ class SignUpActivity : AppCompatActivity() {
             }
         }
 
-
     private fun isValidSignUpDetails(): Boolean {
-        if (binding.imageProfile.toString().isEmpty()) {
-            showToast("Select image profile")
-            return false
-        }else if (binding.editTextName.text.toString().trim().isEmpty()) {
-            showToast("Enter name")
-            return false
-        } else if (binding.editTextEmail.text.toString().trim().isEmpty()) {
-            showToast("Enter email")
-            return false
-        } else if (binding.editTextPassword.text.toString().trim().isEmpty()) {
-            showToast("Enter password")
-            return false
-        } else if (binding.editTextConfirmPassword.text.toString().trim().isEmpty()) {
-            showToast("Enter confirm password")
-            return false
-        } else if (binding.editTextPassword.text.toString() != binding.editTextConfirmPassword.text.toString()) {
-            showToast("Password and confirm password must be same")
-            return false
+        when {
+            encodedImage == null -> {
+                showToast("Select image profile")
+                return false
+            }
+            binding.editTextName.text.toString().trim().isEmpty() -> {
+                showToast("Enter name")
+                return false
+            }
+            binding.editTextEmail.text.toString().trim().isEmpty() -> {
+                showToast("Enter email")
+                return false
+            }
+            binding.editTextPassword.text.toString().trim().isEmpty() -> {
+                showToast("Enter password")
+                return false
+            }
+            binding.editTextConfirmPassword.text.toString().trim().isEmpty() -> {
+                showToast("Enter confirm password")
+                return false
+            }
+            binding.editTextPassword.text.toString() != binding.editTextConfirmPassword.text.toString() -> {
+                showToast("Password and confirm password must be same")
+                return false
+            }
+            else -> return true
         }
-        return true
     }
 
     private fun loading(isLoading: Boolean) {

@@ -20,6 +20,7 @@ import com.example.chatproject.utilities.Constants.Companion.KEY_NAME
 import com.example.chatproject.utilities.Constants.Companion.KEY_PASSWORD
 import com.example.chatproject.utilities.Constants.Companion.KEY_USER_ID
 import com.example.chatproject.utilities.PreferenceManager
+import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
 import java.io.ByteArrayOutputStream
 import java.io.FileNotFoundException
@@ -29,6 +30,7 @@ class SignUpActivity : AppCompatActivity() {
     private val binding by lazy {
         ActivitySignUpBinding.inflate(layoutInflater)
     }
+    private val database = FirebaseFirestore.getInstance()
     private var preferenceManager: PreferenceManager? = null
     private var encodedImage: String? = null
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -45,7 +47,7 @@ class SignUpActivity : AppCompatActivity() {
         }
         binding.buttonSigUp.setOnClickListener {
             if (isValidSignUpDetails()) {
-                signUp()
+                checkExistAccount()
             }
         }
         binding.frameLayoutImage.setOnClickListener {
@@ -58,10 +60,22 @@ class SignUpActivity : AppCompatActivity() {
     private fun showToast(message: String) {
         Toast.makeText(this, message, Toast.LENGTH_LONG).show()
     }
-
+    private fun checkExistAccount(){
+        database.collection(KEY_COLLECTION_USERS)
+            .whereEqualTo(KEY_EMAIL, binding.editTextEmail.text.toString())
+            .whereEqualTo(KEY_PASSWORD, binding.editTextPassword.text.toString())
+            .get()
+            .addOnCompleteListener() {
+                if (it.isSuccessful && it.result != null
+                    && it.result.documents.size > 0) {
+                    showToast("Exist email")
+                }else{
+                    signUp()
+                }
+            }
+    }
     private fun signUp() {
         loading(true)
-        val database = FirebaseFirestore.getInstance()
         val user: HashMap<String, String> = HashMap()
         user[KEY_NAME] = binding.editTextName.text.toString()
         user[KEY_EMAIL] = binding.editTextEmail.text.toString()

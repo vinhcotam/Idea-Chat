@@ -63,7 +63,6 @@ class SignUpActivity : AppCompatActivity() {
     private fun checkExistAccount(){
         database.collection(KEY_COLLECTION_USERS)
             .whereEqualTo(KEY_EMAIL, binding.editTextEmail.text.toString())
-            .whereEqualTo(KEY_PASSWORD, binding.editTextPassword.text.toString())
             .get()
             .addOnCompleteListener() {
                 if (it.isSuccessful && it.result != null

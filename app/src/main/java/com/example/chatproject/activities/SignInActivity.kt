@@ -5,6 +5,7 @@ import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 
 import com.example.chatproject.databinding.ActivitySignInBinding
+import javax.inject.Inject
 
 
 class SignInActivity : AppCompatActivity() {

@@ -37,12 +37,6 @@
                 android:scaleType="centerCrop"
                 app:riv_oval="true"
                 android:layout_height="@dimen/_80sdp"/>
-<!--            <ImageView-->
-<!--                android:id="@+id/imageProfile"-->
-<!--                android:layout_width="@dimen/_80sdp"-->
-<!--                android:layout_height="@dimen/_80sdp"-->
-<!--                android:background="@drawable/background_image"-->
-<!--                android:scaleType="centerCrop" />-->
 
             <TextView
                 android:id="@+id/text_view_add_image"

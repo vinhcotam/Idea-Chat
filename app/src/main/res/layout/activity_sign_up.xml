@@ -26,6 +26,7 @@
             android:textStyle="bold" />
 
         <FrameLayout
+            android:id="@+id/frame_layout_image"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="@dimen/_20sdp">
@@ -38,6 +39,7 @@
                 android:scaleType="centerCrop" />
 
             <TextView
+                android:id="@+id/text_view_add_image"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"
@@ -106,22 +108,36 @@
             android:textColor="@color/primary_text"
             android:textSize="@dimen/_13ssp" />
 
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/button_sig_up"
+        <FrameLayout
             android:layout_width="match_parent"
-            android:layout_height="@dimen/_50sdp"
-            android:layout_marginTop="@dimen/_20sdp"
-            android:text="@string/sign_up"
-            android:textColor="@color/white"
-            android:textSize="@dimen/_13ssp"
-            android:textStyle="bold"
-            app:cornerRadius="@dimen/_8sdp" />
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/_16sdp"
+            android:animateLayoutChanges="true">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/button_sig_up"
+                android:layout_width="match_parent"
+                android:layout_height="@dimen/_50sdp"
+                android:layout_marginTop="@dimen/_20sdp"
+                android:text="@string/sign_up"
+                android:textColor="@color/white"
+                android:textSize="@dimen/_13ssp"
+                android:textStyle="bold"
+                app:cornerRadius="@dimen/_8sdp" />
+            <ProgressBar
+                android:id="@+id/progress_bar_sign_up"
+                android:layout_width="@dimen/_25sdp"
+                android:layout_gravity="center"
+                android:visibility="visible"
+                android:layout_height="@dimen/_25sdp"/>
+        </FrameLayout>
+
         <TextView
+            android:id="@+id/text_view_sign_in"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="@dimen/_10sdp"
             android:text="@string/sign_in"
-            android:id="@+id/text_view_sign_in"
             android:textColor="@color/primary"
             android:textSize="@dimen/_13ssp"
 

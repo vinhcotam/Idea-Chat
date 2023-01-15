@@ -5,6 +5,7 @@ import android.graphics.BitmapFactory
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Base64
+import android.util.Log
 import android.widget.Toast
 import com.example.chatproject.databinding.ActivityMainBinding
 import com.example.chatproject.utilities.Constants.Companion.KEY_COLLECTION_USERS
@@ -34,6 +35,10 @@ class MainActivity : AppCompatActivity() {
 
     private fun setListener() {
         binding.imageSignOut.setOnClickListener { signOut() }
+        binding.fabNewChat.setOnClickListener{
+            val intent = Intent(this, UserActivity::class.java)
+            startActivity(intent)
+        }
 
     }
 
@@ -60,7 +65,7 @@ class MainActivity : AppCompatActivity() {
             preferenceManager?.getString(KEY_USER_ID).toString()
         )
         documentReference.update(KEY_FCM_TOKEN, token)
-            .addOnSuccessListener { showToast("Token updated successfully") }
+//            .addOnSuccessListener { showToast("Token updated successfully") }
             .addOnFailureListener { showToast("Unable to update token") }
     }
 

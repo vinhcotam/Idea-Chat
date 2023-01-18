@@ -1,22 +1,25 @@
 package com.example.chatproject.activities
 
+import android.content.Intent
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.view.View
 import com.example.chatproject.adapters.UserAdapter
 import com.example.chatproject.databinding.ActivityUserBinding
+import com.example.chatproject.listeners.UserListener
 import com.example.chatproject.models.User
 import com.example.chatproject.utilities.Constants.Companion.KEY_COLLECTION_USERS
 import com.example.chatproject.utilities.Constants.Companion.KEY_EMAIL
 import com.example.chatproject.utilities.Constants.Companion.KEY_FCM_TOKEN
 import com.example.chatproject.utilities.Constants.Companion.KEY_IMAGE
 import com.example.chatproject.utilities.Constants.Companion.KEY_NAME
+import com.example.chatproject.utilities.Constants.Companion.KEY_USER
 import com.example.chatproject.utilities.Constants.Companion.KEY_USER_ID
 import com.example.chatproject.utilities.PreferenceManager
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.QueryDocumentSnapshot
 
-class UserActivity : AppCompatActivity() {
+class UserActivity : AppCompatActivity(), UserListener {
     private val binding by lazy {
         ActivityUserBinding.inflate(layoutInflater)
     }
@@ -50,20 +53,21 @@ class UserActivity : AppCompatActivity() {
                         if (currentUserId.equals(queryDocumentSnapshot.id)) {
                             continue
                         }
-                        val user = User(
-                            queryDocumentSnapshot.getString(KEY_NAME).toString(),
-                            queryDocumentSnapshot.getString(KEY_EMAIL).toString(),
-                            queryDocumentSnapshot.getString(KEY_IMAGE).toString(),
-                            queryDocumentSnapshot.getString(KEY_FCM_TOKEN).toString()
-                        )
-//                        user?.name = queryDocumentSnapshot.getString(KEY_NAME).toString()
-//                        user?.email = queryDocumentSnapshot.getString(KEY_EMAIL).toString()
-//                        user?.image = queryDocumentSnapshot.getString(KEY_IMAGE).toString()
-//                        user?.token = queryDocumentSnapshot.getString(KEY_FCM_TOKEN).toString()
+                        val name =queryDocumentSnapshot.getString(KEY_NAME).toString()
+                        val email = queryDocumentSnapshot.getString(KEY_EMAIL).toString()
+                        val image = queryDocumentSnapshot.getString(KEY_IMAGE).toString()
+                        val token = queryDocumentSnapshot.getString(KEY_FCM_TOKEN).toString()
+                        val id = queryDocumentSnapshot.id
+                        val user = User()
+                        user.name = name
+                        user.email = email
+                        user.image = image
+                        user.token = token
+                        user.id = id
                         users.add(user)
                     }
                     if (users.isNotEmpty()) {
-                        val userAdapter = UserAdapter(users)
+                        val userAdapter = UserAdapter(users, this)
                         binding.recyclerViewUser.adapter = userAdapter
                         binding.recyclerViewUser.visibility = View.VISIBLE
                     } else {
@@ -87,4 +91,12 @@ class UserActivity : AppCompatActivity() {
             binding.processBar.visibility = View.INVISIBLE
         }
     }
+
+    override fun onUserClicked(user: User) {
+        val intent = Intent(this, ChatActivity::class.java)
+        intent.putExtra(KEY_USER, user)
+        startActivity(intent)
+        finish()
+    }
 }
+

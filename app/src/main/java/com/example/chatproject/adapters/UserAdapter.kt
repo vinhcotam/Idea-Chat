@@ -7,11 +7,12 @@ import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
 import com.example.chatproject.databinding.ItemContainerUserBinding
+import com.example.chatproject.listeners.UserListener
 import com.example.chatproject.models.User
 
-class UserAdapter(items: List<User>) : RecyclerView.Adapter<UserAdapter.ViewHolder>() {
+class UserAdapter(items: List<User>, mListener: UserListener) : RecyclerView.Adapter<UserAdapter.ViewHolder>() {
     private val listUsers = items
-
+    private var mListener: UserListener = mListener
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         val binding =
             ItemContainerUserBinding.inflate(LayoutInflater.from(parent.context), parent, false)
@@ -23,26 +24,26 @@ class UserAdapter(items: List<User>) : RecyclerView.Adapter<UserAdapter.ViewHold
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-        holder.bind(listUsers[position])
-
+        holder.bind(listUsers[position], mListener)
     }
 
     class ViewHolder(private val binding: ItemContainerUserBinding) :
         RecyclerView.ViewHolder(binding.root) {
         private var user: User? = null
-
         private fun getUserImage(encodeImage: String): Bitmap? {
             val bytes = Base64.decode(encodeImage, Base64.DEFAULT)
             return BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
         }
-
-        fun bind(items: User) {
+        fun bind(items: User, mListener: UserListener) {
             user = items
             binding.textViewName.text = items.name
             binding.textViewEmail.text = items.email
             binding.imageProfile.setImageBitmap(getUserImage(items.image))
-
+            binding.root.setOnClickListener{
+                mListener.onUserClicked(user!!)
+            }
         }
+
     }
 
 }

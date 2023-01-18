@@ -1,11 +1,16 @@
 package com.example.chatproject.models
 
+import java.io.Serializable
 
-data class User(
-    var name: String,
-    var email: String,
-    var image: String,
-    var token: String
-)
+
+class User: Serializable{
+    lateinit var name: String
+    lateinit var email: String
+    lateinit var image: String
+    lateinit var token: String
+    lateinit var id: String
+}
+
+
 
 

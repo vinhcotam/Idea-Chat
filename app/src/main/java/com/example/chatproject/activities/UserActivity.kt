@@ -1,7 +1,6 @@
 package com.example.chatproject.activities
 
 import android.content.Intent
-import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.view.View
 import com.example.chatproject.adapters.UserAdapter
@@ -19,7 +18,7 @@ import com.example.chatproject.utilities.PreferenceManager
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.QueryDocumentSnapshot
 
-class UserActivity : AppCompatActivity(), UserListener {
+class UserActivity : BaseActivity(), UserListener {
     private val binding by lazy {
         ActivityUserBinding.inflate(layoutInflater)
     }

@@ -12,20 +12,26 @@ import com.example.chatproject.databinding.ActivityChatActivityBinding
 import com.example.chatproject.models.ChatMessage
 import com.example.chatproject.models.User
 import com.example.chatproject.utilities.Constants.Companion.KEY_COLLECTION_CHAT
+import com.example.chatproject.utilities.Constants.Companion.KEY_CONVERSATION
+import com.example.chatproject.utilities.Constants.Companion.KEY_IMAGE
+import com.example.chatproject.utilities.Constants.Companion.KEY_LAST_MESSAGE
 import com.example.chatproject.utilities.Constants.Companion.KEY_MESSAGE
+import com.example.chatproject.utilities.Constants.Companion.KEY_NAME
 import com.example.chatproject.utilities.Constants.Companion.KEY_RECEIVER_ID
+import com.example.chatproject.utilities.Constants.Companion.KEY_RECEIVER_IMAGE
+import com.example.chatproject.utilities.Constants.Companion.KEY_RECEIVER_NAME
 import com.example.chatproject.utilities.Constants.Companion.KEY_SENDER_ID
+import com.example.chatproject.utilities.Constants.Companion.KEY_SENDER_IMAGE
+import com.example.chatproject.utilities.Constants.Companion.KEY_SENDER_NAME
 import com.example.chatproject.utilities.Constants.Companion.KEY_TIMESTAMP
 
 import com.example.chatproject.utilities.Constants.Companion.KEY_USER
 import com.example.chatproject.utilities.Constants.Companion.KEY_USER_ID
 import com.example.chatproject.utilities.PreferenceManager
 import com.google.firebase.firestore.DocumentChange
+import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
 import java.text.SimpleDateFormat
-import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
-
 import java.util.*
 import kotlin.collections.ArrayList
 import kotlin.collections.HashMap
@@ -40,6 +46,11 @@ class ChatActivity : AppCompatActivity() {
     private var preferenceManager: PreferenceManager? = null
     private var database: FirebaseFirestore? = null
     private var chatMessage = ChatMessage()
+    private var conversionId: String? = null
+//    private val time: Date = Calendar.getInstance().time
+//    @SuppressLint("SimpleDateFormat")
+//    private val formatter = SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
+//    private val current = formatter.format(time)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(binding.root)
@@ -61,26 +72,34 @@ class ChatActivity : AppCompatActivity() {
 
     }
 
+    @SuppressLint("SimpleDateFormat")
     private fun sendMessage() {
-        val message: HashMap<String, String> = HashMap()
+        val message: HashMap<String, Any> = HashMap()
         message[KEY_SENDER_ID] = preferenceManager?.getString(KEY_USER_ID).toString()
         message[KEY_RECEIVER_ID] = receiverUser?.id.toString()
         message[KEY_MESSAGE] = binding.editTextMessage.text.toString()
-        val time = Calendar.getInstance().time
-        val formatter = SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
-        val current = formatter.format(time)
-//        val calendar = Calendar.getInstance()
-//        val current = LocalDateTime.of(
-//            calendar.get(Calendar.YEAR),
-//            calendar.get(Calendar.MONTH),
-//            calendar.get(Calendar.DAY_OF_MONTH),
-//            calendar.get(Calendar.HOUR_OF_DAY),
-//            calendar.get(Calendar.MINUTE),
-//            calendar.get(Calendar.SECOND)
-//        )
-        message[KEY_TIMESTAMP] = current.toString()
+
+//        "MMMM dd, yyyy -hh:mm a"
+//        message[KEY_TIMESTAMP] = current.toString()
+        message[KEY_TIMESTAMP] = Date()
+
         database?.collection(KEY_COLLECTION_CHAT)?.add(message)
+        if(conversionId !=null){
+            updateConversation(binding.editTextMessage.text.toString())
+        }else{
+            val conversation: HashMap<String, Any> = HashMap()
+            conversation[KEY_SENDER_ID] = preferenceManager?.getString(KEY_USER_ID).toString()
+            conversation[KEY_SENDER_NAME] = preferenceManager?.getString(KEY_NAME).toString()
+            conversation[KEY_SENDER_IMAGE] = preferenceManager?.getString(KEY_IMAGE).toString()
+            conversation[KEY_RECEIVER_ID] = receiverUser?.id.toString()
+            conversation[KEY_RECEIVER_NAME] = receiverUser?.name.toString()
+            conversation[KEY_RECEIVER_IMAGE] = receiverUser?.image.toString()
+            conversation[KEY_LAST_MESSAGE] = binding.editTextMessage.text.toString()
+            conversation[KEY_TIMESTAMP] = Date()
+            addConversation(conversation)
+        }
         binding.editTextMessage.text.clear()
+
     }
 
     @SuppressLint("NotifyDataSetChanged")
@@ -102,15 +121,15 @@ class ChatActivity : AppCompatActivity() {
                             chatMessage.receiverId =
                                 documentChange.document[KEY_RECEIVER_ID].toString()
                             chatMessage.message = documentChange.document[KEY_MESSAGE].toString()
-                            chatMessage.dateTime = documentChange.document[KEY_TIMESTAMP].toString()
-
+//                            chatMessage.dateTime = documentChange.document[KEY_TIMESTAMP].toString()
+                            chatMessage.dateTime = getReadableDateTime(documentChange.document.getDate(KEY_TIMESTAMP))
 //                            chatMessage.dateTime = getReadableDateTime(documentChange.document.getDate(KEY_TIMESTAMP)!!)
-//                            chatMessage.dateObject = documentChange.document.getDate(KEY_TIMESTAMP)!!
+                            chatMessage.dateObject = documentChange.document.getDate(KEY_TIMESTAMP)!!
 
                             chatMessages.add(chatMessage)
                         }
                     }
-                    chatMessages.sortBy{ it. dateTime}
+                    chatMessages.sortedByDescending { it.dateObject }
                     if (count == 0) {
                         chatAdapter?.notifyDataSetChanged()
                     } else {
@@ -121,6 +140,9 @@ class ChatActivity : AppCompatActivity() {
                     binding.recyclerViewChat.visibility = View.VISIBLE
                 }
                 binding.processBar.visibility = View.GONE
+                if (conversionId == null){
+                    checkForConversation()
+                }
             }
         database?.collection(KEY_COLLECTION_CHAT)
             ?.whereEqualTo(KEY_SENDER_ID, receiverUser?.id)
@@ -139,13 +161,13 @@ class ChatActivity : AppCompatActivity() {
                             chatMessage.receiverId =
                                 documentChange.document[KEY_RECEIVER_ID].toString()
                             chatMessage.message = documentChange.document[KEY_MESSAGE].toString()
-                            chatMessage.dateTime = documentChange.document[KEY_TIMESTAMP].toString()
-//                            chatMessage.dateTime = getReadableDateTime(documentChange.document.getDate(KEY_TIMESTAMP)!!)
-//                            chatMessage.dateObject = documentChange.document.getDate(KEY_TIMESTAMP)!!
+                            chatMessage.dateTime = getReadableDateTime(documentChange.document.getDate(KEY_TIMESTAMP))
+//                            chatMessage.dateTime = documentChange.document[KEY_TIMESTAMP].toString()
+                            chatMessage.dateObject = documentChange.document.getDate(KEY_TIMESTAMP)!!
                             chatMessages.add(chatMessage)
                         }
                     }
-                    chatMessages.sortBy{ it. dateTime}
+                    chatMessages.sortByDescending { it.dateObject }
                     if (count == 0) {
                         chatAdapter?.notifyDataSetChanged()
                     } else {
@@ -156,6 +178,9 @@ class ChatActivity : AppCompatActivity() {
                     binding.recyclerViewChat.visibility = View.VISIBLE
                 }
                 binding.processBar.visibility = View.GONE
+                if (conversionId == null){
+                    checkForConversation()
+                }
             }
     }
 
@@ -177,8 +202,42 @@ class ChatActivity : AppCompatActivity() {
             sendMessage()
         }
     }
+    private fun addConversation(conversation: HashMap<String, Any>){
+        database?.collection(KEY_CONVERSATION)
+            ?.add(conversation)
+            ?.addOnSuccessListener {
+                conversionId = it.id
+            }
 
-    private fun getReadableDateTime(date: Date): String {
-        return SimpleDateFormat("MMMM dd, yyyy -hh:mm a", Locale.getDefault()).format(date)
     }
+    private fun updateConversation(message:String){
+        val documentReference = database?.collection(KEY_CONVERSATION)?.document(conversionId.toString())
+        documentReference?.update(KEY_LAST_MESSAGE, message, KEY_TIMESTAMP,Date())
+    }
+    private fun checkForConversation(){
+        if(chatMessages.size!=0){
+            preferenceManager?.getString(KEY_USER_ID)
+                ?.let { receiverUser?.id?.let { it1 -> checkForConversationRemotely(it, it1) } }
+            preferenceManager?.getString(KEY_USER_ID)
+                ?.let { receiverUser?.id?.let { it1 -> checkForConversationRemotely(it1, it) } }
+        }
+    }
+    private fun checkForConversationRemotely(senderId: String, receiverId: String){
+        database?.collection(KEY_CONVERSATION)
+            ?.whereEqualTo(KEY_SENDER_ID, senderId)
+            ?.whereEqualTo(KEY_RECEIVER_ID, receiverId)
+            ?.get()
+            ?.addOnCompleteListener{
+                if(it.isSuccessful && it.result != null && it.result.documents.size>0){
+                    val documentSnapshot: DocumentSnapshot = it.result.documents[0]
+                    conversionId = documentSnapshot.id
+
+                }
+            }
+    }
+
+    private fun getReadableDateTime(date: Date?): String {
+        return SimpleDateFormat("MMMM dd, yyyy - hh:mm:ss a", Locale.getDefault()).format(date)
+    }
+
 }

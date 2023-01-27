@@ -3,7 +3,6 @@ package com.example.chatproject.activities
 import android.annotation.SuppressLint
 import android.content.Intent
 import android.graphics.BitmapFactory
-import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Base64
 import android.view.View
@@ -36,7 +35,7 @@ import java.util.*
 import kotlin.collections.ArrayList
 import kotlin.collections.HashMap
 
-class MainActivity : AppCompatActivity(), ConversationListener {
+class MainActivity : BaseActivity(), ConversationListener {
     private val binding by lazy {
         ActivityMainBinding.inflate(layoutInflater)
     }
@@ -142,7 +141,7 @@ class MainActivity : AppCompatActivity(), ConversationListener {
                     }
                 }
 
-                conversations.sortedByDescending{ it.dateTime}
+                conversations.sortByDescending{ it.dateObject}
                 conversationsAdapter?.notifyDataSetChanged()
                 binding.recyclerViewConversation.smoothScrollToPosition(0)
                 binding.recyclerViewConversation.visibility = View.VISIBLE
@@ -194,6 +193,10 @@ class MainActivity : AppCompatActivity(), ConversationListener {
 
     }
     private fun getReadableDateTime(date: Date?): String {
-        return SimpleDateFormat("MMMM dd, yyyy - hh:mm:ss a", Locale.getDefault()).format(date)
+        return date?.let {
+            SimpleDateFormat("MMMM dd, yyyy - hh:mm:ss a", Locale.getDefault()).format(
+                it
+            )
+        }.toString()
     }
 }

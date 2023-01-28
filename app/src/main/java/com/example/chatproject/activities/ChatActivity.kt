@@ -277,4 +277,5 @@ class ChatActivity : BaseActivity() {
         listenAvailabilityOfReceiver()
     }
 
+
 }

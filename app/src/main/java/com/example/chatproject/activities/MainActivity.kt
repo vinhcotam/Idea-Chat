@@ -125,7 +125,6 @@ class MainActivity : BaseActivity(), ConversationListener {
                         chatMessage.message =
                             documentChange.document.getString(KEY_LAST_MESSAGE).toString()
                         chatMessage.dateObject = documentChange.document.getDate(KEY_TIMESTAMP)!!
-                        chatMessage.dateTime = getReadableDateTime(documentChange.document.getDate(KEY_TIMESTAMP))
                         conversations.add(chatMessage)
                     } else if (documentChange.type == DocumentChange.Type.MODIFIED) {
                         for (i in 0 until conversations.size) {
@@ -134,14 +133,16 @@ class MainActivity : BaseActivity(), ConversationListener {
                             if (conversations[i].senderId == senderId && conversations[i].receiverId == receiverId) {
                                 conversations[i].message =
                                     documentChange.document.getString(KEY_LAST_MESSAGE).toString()
-                                chatMessage.dateObject = documentChange.document.getDate(KEY_TIMESTAMP)!!
+                                chatMessage.dateObject =
+                                    documentChange.document.getDate(KEY_TIMESTAMP)!!
                                 break
                             }
                         }
                     }
                 }
-
-                conversations.sortByDescending{ it.dateObject}
+                conversations.sortByDescending { it.dateObject }
+//                conversations.sortWith(compareBy { it.dateObject })
+//                conversations.sortedByDescending { it.dateObject }
                 conversationsAdapter?.notifyDataSetChanged()
                 binding.recyclerViewConversation.smoothScrollToPosition(0)
                 binding.recyclerViewConversation.visibility = View.VISIBLE
@@ -192,11 +193,5 @@ class MainActivity : BaseActivity(), ConversationListener {
         startActivity(intent)
 
     }
-    private fun getReadableDateTime(date: Date?): String {
-        return date?.let {
-            SimpleDateFormat("MMMM dd, yyyy - hh:mm:ss a", Locale.getDefault()).format(
-                it
-            )
-        }.toString()
-    }
+
 }

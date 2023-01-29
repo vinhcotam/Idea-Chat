@@ -5,15 +5,20 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.os.Bundle
 import android.util.Base64
+import android.util.Log
 import android.view.View
+import android.widget.Toast
 import com.example.chatproject.adapters.ChatAdapter
 import com.example.chatproject.databinding.ActivityChatActivityBinding
 import com.example.chatproject.models.ChatMessage
 import com.example.chatproject.models.User
+import com.example.chatproject.network.ApiClient
+import com.example.chatproject.network.ApiService
 import com.example.chatproject.utilities.Constants.Companion.KEY_AVAILABILITY
 import com.example.chatproject.utilities.Constants.Companion.KEY_COLLECTION_CHAT
 import com.example.chatproject.utilities.Constants.Companion.KEY_COLLECTION_USERS
 import com.example.chatproject.utilities.Constants.Companion.KEY_CONVERSATION
+import com.example.chatproject.utilities.Constants.Companion.KEY_FCM_TOKEN
 import com.example.chatproject.utilities.Constants.Companion.KEY_IMAGE
 import com.example.chatproject.utilities.Constants.Companion.KEY_LAST_MESSAGE
 import com.example.chatproject.utilities.Constants.Companion.KEY_MESSAGE
@@ -28,8 +33,17 @@ import com.example.chatproject.utilities.Constants.Companion.KEY_TIMESTAMP
 
 import com.example.chatproject.utilities.Constants.Companion.KEY_USER
 import com.example.chatproject.utilities.Constants.Companion.KEY_USER_ID
+import com.example.chatproject.utilities.Constants.Companion.REMOTE_MSG_DATA
+import com.example.chatproject.utilities.Constants.Companion.REMOTE_MSG_REGISTRATION_IDS
+import com.example.chatproject.utilities.Constants.Companion.getRemoteMsgHeaders
 import com.example.chatproject.utilities.PreferenceManager
 import com.google.firebase.firestore.*
+import org.json.JSONArray
+import org.json.JSONException
+import org.json.JSONObject
+import retrofit2.Call
+import retrofit2.Callback
+import retrofit2.Response
 import java.text.SimpleDateFormat
 import java.util.*
 import kotlin.collections.ArrayList
@@ -51,6 +65,7 @@ class ChatActivity : BaseActivity() {
         super.onCreate(savedInstanceState)
         setContentView(binding.root)
         setListeners()
+        database = FirebaseFirestore.getInstance()
         loadReceiverDetails()
         init()
         listenMessages()
@@ -60,25 +75,20 @@ class ChatActivity : BaseActivity() {
         preferenceManager = PreferenceManager(this)
         chatMessages = ArrayList()
         chatAdapter = ChatAdapter(
-            chatMessages, getBitmapFromEncodeString(receiverUser?.image),
+            chatMessages,
+            getBitmapFromEncodeString(receiverUser?.image),
             preferenceManager?.getString(KEY_USER_ID).toString()
         )
         binding.recyclerViewChat.adapter = chatAdapter
-        database = FirebaseFirestore.getInstance()
 
     }
 
-    @SuppressLint("SimpleDateFormat")
     private fun sendMessage() {
         val message: HashMap<String, Any> = HashMap()
         message[KEY_SENDER_ID] = preferenceManager?.getString(KEY_USER_ID).toString()
         message[KEY_RECEIVER_ID] = receiverUser?.id.toString()
         message[KEY_MESSAGE] = binding.editTextMessage.text.toString()
-
-//        "MMMM dd, yyyy -hh:mm a"
-//        message[KEY_TIMESTAMP] = current.toString()
         message[KEY_TIMESTAMP] = Date()
-
         database?.collection(KEY_COLLECTION_CHAT)?.add(message)
         if (conversionId != null) {
             updateConversation(binding.editTextMessage.text.toString())
@@ -94,7 +104,62 @@ class ChatActivity : BaseActivity() {
             conversation[KEY_TIMESTAMP] = Date()
             addConversation(conversation)
         }
+        if (!isReceiverAvailable) {
+            try {
+                val tokens = JSONArray()
+                tokens.put(receiverUser?.token)
+                val data = JSONObject()
+                data.put(KEY_USER_ID, preferenceManager?.getString(KEY_USER_ID))
+                data.put(KEY_NAME, preferenceManager?.getString(KEY_NAME))
+                data.put(KEY_FCM_TOKEN, preferenceManager?.getString(KEY_FCM_TOKEN))
+                data.put(KEY_MESSAGE, binding.editTextMessage.text.toString())
+                val body = JSONObject()
+                body.put(REMOTE_MSG_DATA, data)
+                body.put(REMOTE_MSG_REGISTRATION_IDS, tokens)
+                sendNotification(body.toString())
+            } catch (exception: Exception) {
+                showToast(exception.message.toString())
+            }
+        }
         binding.editTextMessage.text.clear()
+
+    }
+
+    fun showToast(message: String) {
+        Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
+    }
+
+    private fun sendNotification(messageBody: String) {
+        ApiClient.getClient()?.create(ApiService::class.java)?.sendMessage(
+            getRemoteMsgHeaders(),
+            messageBody
+        )?.enqueue(object : Callback<String> {
+            override fun onResponse(call: Call<String>, response: Response<String>) {
+                if (response.isSuccessful) {
+                    try {
+                        if (response.body() != null) {
+                            val responseJson = JSONObject(response.body().toString())
+                            val results = responseJson.getJSONArray("results")
+                            if (responseJson.getInt("failure") == 1) {
+                                val error: JSONObject = results.get(0) as JSONObject
+                                showToast(error.getString("error"))
+                                return
+                            }
+                        }
+                    } catch (e: JSONException) {
+                        e.printStackTrace()
+                    }
+                    showToast("Notification sent successfully")
+                } else {
+                    showToast("Error:" + response.code())
+                }
+            }
+
+            override fun onFailure(call: Call<String>, t: Throwable) {
+                showToast(t.message.toString())
+            }
+
+        })
 
     }
 
@@ -106,14 +171,22 @@ class ChatActivity : BaseActivity() {
                 return@addSnapshotListener
             }
             if (value != null) {
-                val availability: Int = Objects.requireNonNull(
-                    value.getLong(KEY_AVAILABILITY)
-                )!!.toInt()
-                isReceiverAvailable = availability ==1
+                if (value.getLong(KEY_AVAILABILITY) != null) {
+                    val availability: Int = Objects.requireNonNull(
+                        value.getLong(KEY_AVAILABILITY)
+                    )!!.toInt()
+                    isReceiverAvailable = availability == 1
+                }
+                receiverUser?.token = value.getString(KEY_FCM_TOKEN).toString()
+                if (receiverUser?.image == null) {
+                    receiverUser?.image = value.getString(KEY_IMAGE).toString()
+//                    chatAdapter?.setReceiverProfileImage(getBitmapFromEncodeString(receiverUser?.image))
+                    chatAdapter?.notifyItemRangeChanged(0, chatMessages.size)
+                }
             }
-            if(isReceiverAvailable){
+            if (isReceiverAvailable) {
                 binding.textViewAvailability.visibility = View.VISIBLE
-            }else{
+            } else {
                 binding.textViewAvailability.visibility = View.GONE
             }
         }
@@ -138,10 +211,8 @@ class ChatActivity : BaseActivity() {
                             chatMessage.receiverId =
                                 documentChange.document[KEY_RECEIVER_ID].toString()
                             chatMessage.message = documentChange.document[KEY_MESSAGE].toString()
-//                            chatMessage.dateTime = documentChange.document[KEY_TIMESTAMP].toString()
                             chatMessage.dateTime =
                                 getReadableDateTime(documentChange.document.getDate(KEY_TIMESTAMP))
-//                            chatMessage.dateTime = getReadableDateTime(documentChange.document.getDate(KEY_TIMESTAMP)!!)
                             chatMessage.dateObject =
                                 documentChange.document.getDate(KEY_TIMESTAMP)!!
 
@@ -183,7 +254,6 @@ class ChatActivity : BaseActivity() {
                             chatMessage.message = documentChange.document[KEY_MESSAGE].toString()
                             chatMessage.dateTime =
                                 getReadableDateTime(documentChange.document.getDate(KEY_TIMESTAMP))
-//                            chatMessage.dateTime = documentChange.document[KEY_TIMESTAMP].toString()
                             chatMessage.dateObject =
                                 documentChange.document.getDate(KEY_TIMESTAMP)!!
                             chatMessages.add(chatMessage)
@@ -207,14 +277,28 @@ class ChatActivity : BaseActivity() {
             }
     }
 
-    private fun getBitmapFromEncodeString(encodeImage: String?): Bitmap {
+    private fun getBitmapFromEncodeString(encodeImage: String?): Bitmap? {
+        if (encodeImage == null) return null
         val bytes = Base64.decode(encodeImage, Base64.DEFAULT)
         return BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+
     }
 
     private fun loadReceiverDetails() {
         receiverUser = intent.getSerializableExtra(KEY_USER) as? User
         binding.textViewName.text = receiverUser?.name
+        if (receiverUser?.image == null) {
+            database?.collection(KEY_COLLECTION_USERS)?.document(receiverUser?.id.toString())
+                ?.get()
+                ?.addOnSuccessListener { document ->
+                    if (document != null) {
+                        receiverUser?.image = document.data?.get(KEY_IMAGE).toString()
+                    }
+                }
+        }
+        val bytes = Base64.decode(receiverUser?.image, Base64.DEFAULT)
+        val bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+        binding.imageProfile.setImageBitmap(bitmap)
     }
 
     private fun setListeners() {

@@ -24,6 +24,7 @@
         <activity
             android:name=".activities.ChatActivity"
             android:exported="false"
+            android:parentActivityName=".activities.MainActivity"
             android:windowSoftInputMode="adjustResize">
             <meta-data
                 android:name="android.app.lib_name"
@@ -64,7 +65,7 @@
 
         <service
             android:name=".firebase.MessagingService"
-            android:exported="true">
+            android:exported="false">
             <intent-filter>
                 <action android:name="com.google.firebase.MESSAGING_EVENT" />
             </intent-filter>

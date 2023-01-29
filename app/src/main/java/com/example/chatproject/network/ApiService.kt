@@ -7,5 +7,5 @@ import retrofit2.http.POST
 
 interface ApiService {
     @POST("send")
-    suspend fun sendMessage(@HeaderMap headers: HashMap<String, String>, @Body messageBody: String): Call<String>
+    fun sendMessage(@HeaderMap headers: HashMap<String, String>, @Body messageBody: String): Call<String>
 }

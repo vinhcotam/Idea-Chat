@@ -8,31 +8,38 @@ import com.example.chatproject.databinding.ItemContainerReceivedMessageBinding
 import com.example.chatproject.databinding.ItemContainerSentMessageBinding
 import com.example.chatproject.models.ChatMessage
 
-class ChatAdapter(chatMessages: List<ChatMessage>, receiverProfileImage: Bitmap, senderId: String) :
+class ChatAdapter(chatMessages: List<ChatMessage>,
+                  private var receiverProfileImage: Bitmap?,
+                  private val senderId: String
+) :
     RecyclerView.Adapter<RecyclerView.ViewHolder>() {
     private val chatList = chatMessages
-    private val receiverProfileImage = receiverProfileImage
-    private val senderId = senderId
     private val chatMessage = chatList
 
 
     companion object {
-
         const val VIEW_TYPE_SENT = 1
         const val VIEW_TYPE_RECEIVED = 2
-        class SentMessageViewHolder(private val binding: ItemContainerSentMessageBinding) :
-            RecyclerView.ViewHolder(binding.root) {
-            fun setData(chatMessage: ChatMessage) {
-                binding.textViewMessage.text = chatMessage.message
-                binding.textViewDatetime.text = chatMessage.dateTime
-            }
+    }
+    fun setReceiverProfileImage(bitmap: Bitmap?){
+        receiverProfileImage = bitmap
+    }
+    class SentMessageViewHolder(private val binding: ItemContainerSentMessageBinding) :
+        RecyclerView.ViewHolder(binding.root) {
+        fun setData(chatMessage: ChatMessage) {
+            binding.textViewMessage.text = chatMessage.message
+            binding.textViewDatetime.text = chatMessage.dateTime
         }
+    }
 
-        class ReceivedMessageViewHolder(private val binding: ItemContainerReceivedMessageBinding) :
-            RecyclerView.ViewHolder(binding.root) {
-            fun setData(chatMessage: ChatMessage, receiverProfileImage: Bitmap) {
-                binding.textViewMessage.text = chatMessage.message
-                binding.textViewDatetime.text = chatMessage.dateTime
+    class ReceivedMessageViewHolder(private val binding: ItemContainerReceivedMessageBinding) :
+        RecyclerView.ViewHolder(binding.root) {
+        fun setData(chatMessage: ChatMessage
+                    , receiverProfileImage: Bitmap?
+        ) {
+            binding.textViewMessage.text = chatMessage.message
+            binding.textViewDatetime.text = chatMessage.dateTime
+            if (receiverProfileImage != null) {
                 binding.imageProfile.setImageBitmap(receiverProfileImage)
             }
         }
@@ -62,10 +69,12 @@ class ChatAdapter(chatMessages: List<ChatMessage>, receiverProfileImage: Bitmap,
     }
 
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
-        if(getItemViewType(position)== VIEW_TYPE_SENT){
+        if (getItemViewType(position) == VIEW_TYPE_SENT) {
             (holder as SentMessageViewHolder).setData(chatMessage[position])
-        }else{
-            (holder as ReceivedMessageViewHolder).setData(chatMessage[position],receiverProfileImage)
+        } else {
+            (holder as ReceivedMessageViewHolder).setData(chatMessage[position]
+                , receiverProfileImage
+            )
         }
 
     }

@@ -5,7 +5,6 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.os.Bundle
 import android.util.Base64
-import android.util.Log
 import android.view.View
 import android.widget.Toast
 import com.example.chatproject.adapters.ChatAdapter
@@ -65,7 +64,6 @@ class ChatActivity : BaseActivity() {
         super.onCreate(savedInstanceState)
         setContentView(binding.root)
         setListeners()
-        database = FirebaseFirestore.getInstance()
         loadReceiverDetails()
         init()
         listenMessages()
@@ -79,7 +77,24 @@ class ChatActivity : BaseActivity() {
             getBitmapFromEncodeString(receiverUser?.image),
             preferenceManager?.getString(KEY_USER_ID).toString()
         )
+
         binding.recyclerViewChat.adapter = chatAdapter
+//
+        database = FirebaseFirestore.getInstance()
+        database?.collection(KEY_COLLECTION_USERS)?.document(receiverUser?.id.toString())?.get()
+            ?.addOnCompleteListener { document ->
+                if (document != null){
+                    receiverUser?.image =
+                        document.result.data?.get(KEY_IMAGE).toString()
+                    binding.imageProfile.setImageBitmap(getBitmapFromEncodeString(receiverUser?.image))
+                    chatAdapter?.setReceiverProfileImage(getBitmapFromEncodeString(receiverUser?.image))
+                    chatAdapter?.notifyItemRangeChanged(0, chatMessages.size)
+                }
+            }
+//        if(receiverUser?.image!=null){
+
+
+//        }
 
     }
 
@@ -131,8 +146,7 @@ class ChatActivity : BaseActivity() {
 
     private fun sendNotification(messageBody: String) {
         ApiClient.getClient()?.create(ApiService::class.java)?.sendMessage(
-            getRemoteMsgHeaders(),
-            messageBody
+            getRemoteMsgHeaders(), messageBody
         )?.enqueue(object : Callback<String> {
             override fun onResponse(call: Call<String>, response: Response<String>) {
                 if (response.isSuccessful) {
@@ -180,7 +194,7 @@ class ChatActivity : BaseActivity() {
                 receiverUser?.token = value.getString(KEY_FCM_TOKEN).toString()
                 if (receiverUser?.image == null) {
                     receiverUser?.image = value.getString(KEY_IMAGE).toString()
-//                    chatAdapter?.setReceiverProfileImage(getBitmapFromEncodeString(receiverUser?.image))
+                    chatAdapter?.setReceiverProfileImage(getBitmapFromEncodeString(receiverUser?.image))
                     chatAdapter?.notifyItemRangeChanged(0, chatMessages.size)
                 }
             }
@@ -196,8 +210,7 @@ class ChatActivity : BaseActivity() {
     private fun listenMessages() {
         database?.collection(KEY_COLLECTION_CHAT)
             ?.whereEqualTo(KEY_SENDER_ID, preferenceManager?.getString(KEY_USER_ID))
-            ?.whereEqualTo(KEY_RECEIVER_ID, receiverUser?.id)
-            ?.addSnapshotListener { value, error ->
+            ?.whereEqualTo(KEY_RECEIVER_ID, receiverUser?.id)?.addSnapshotListener { value, error ->
                 if (error != null) {
                     return@addSnapshotListener
                 }
@@ -235,8 +248,7 @@ class ChatActivity : BaseActivity() {
                     checkForConversation()
                 }
             }
-        database?.collection(KEY_COLLECTION_CHAT)
-            ?.whereEqualTo(KEY_SENDER_ID, receiverUser?.id)
+        database?.collection(KEY_COLLECTION_CHAT)?.whereEqualTo(KEY_SENDER_ID, receiverUser?.id)
             ?.whereEqualTo(KEY_RECEIVER_ID, preferenceManager?.getString(KEY_USER_ID))
             ?.addSnapshotListener { value, error ->
                 if (error != null) {
@@ -287,19 +299,8 @@ class ChatActivity : BaseActivity() {
     private fun loadReceiverDetails() {
         receiverUser = intent.getSerializableExtra(KEY_USER) as? User
         binding.textViewName.text = receiverUser?.name
-        if (receiverUser?.image == null) {
-            database?.collection(KEY_COLLECTION_USERS)?.document(receiverUser?.id.toString())
-                ?.get()
-                ?.addOnSuccessListener { document ->
-                    if (document != null) {
-                        receiverUser?.image = document.data?.get(KEY_IMAGE).toString()
-                    }
-                }
-        }
-        val bytes = Base64.decode(receiverUser?.image, Base64.DEFAULT)
-        val bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
-        binding.imageProfile.setImageBitmap(bitmap)
     }
+
 
     private fun setListeners() {
         binding.imageBack.setOnClickListener {
@@ -311,11 +312,9 @@ class ChatActivity : BaseActivity() {
     }
 
     private fun addConversation(conversation: HashMap<String, Any>) {
-        database?.collection(KEY_CONVERSATION)
-            ?.add(conversation)
-            ?.addOnSuccessListener {
-                conversionId = it.id
-            }
+        database?.collection(KEY_CONVERSATION)?.add(conversation)?.addOnSuccessListener {
+            conversionId = it.id
+        }
 
     }
 
@@ -335,11 +334,8 @@ class ChatActivity : BaseActivity() {
     }
 
     private fun checkForConversationRemotely(senderId: String, receiverId: String) {
-        database?.collection(KEY_CONVERSATION)
-            ?.whereEqualTo(KEY_SENDER_ID, senderId)
-            ?.whereEqualTo(KEY_RECEIVER_ID, receiverId)
-            ?.get()
-            ?.addOnCompleteListener {
+        database?.collection(KEY_CONVERSATION)?.whereEqualTo(KEY_SENDER_ID, senderId)
+            ?.whereEqualTo(KEY_RECEIVER_ID, receiverId)?.get()?.addOnCompleteListener {
                 if (it.isSuccessful && it.result != null && it.result.documents.size > 0) {
                     val documentSnapshot: DocumentSnapshot = it.result.documents[0]
                     conversionId = documentSnapshot.id
